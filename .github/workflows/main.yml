@@ -1,0 +1,69 @@
+name: Java-Web-UI-API-Automation
+
+on:
+  workflow_dispatch:
+    inputs: { }
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  run-automation:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up JDK 19
+        uses: actions/setup-java@v3
+        with:
+          java-version: '19'
+          distribution: 'temurin'
+
+      - name: Setup gradlew
+        run: chmod +x gradlew
+
+      - name: Execute API Test
+        run: ./gradlew apiTest
+
+      - name: Deploy report to Github Pages
+        if: always()
+        uses: peaceiris/actions-gh-pages@v3.7.3
+        with:
+          PERSONAL_TOKEN: ${{ secrets.GH_TOKEN }}
+          PUBLISH_DIR: reports
+
+  run-web-automation:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Wait
+        uses: NathanFirmo/wait-for-other-job@v1.1.1
+        with:
+          token: ${{ secrets.GH_TOKEN }}
+          job: 'run-api-automation'
+
+      - uses: actions/checkout@v3
+
+      - name: Set up JDK 19
+        uses: actions/setup-java@v3
+        with:
+          java-version: '19'
+          distribution: 'temurin'
+
+      - name: Setup Chrome
+        uses: browser-actions/setup-chrome@v0.0.0
+
+      - name: Setup gradlew
+        run: chmod +x gradlew
+
+      - name: Execute Web Test
+        run: ./gradlew webTest
+
+      - name: Deploy report to Github Pages
+        if: always()
+        uses: peaceiris/actions-gh-pages@v3.7.3
+        with:
+          PERSONAL_TOKEN: ${{ secrets.GH_TOKEN }}
+          PUBLISH_DIR: reports
